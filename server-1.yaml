@@ -1,0 +1,48 @@
+global:
+  enabled: true
+  tlsDisable: true
+server:
+  log_level: "debug"
+  image:
+    repository: "hashicorp/vault-enterprise"
+    tag: "1.9.0_ent"
+  enterpriseLicense:
+    secretName: vault-ent-license
+  ingress:
+    enabled: true
+  extraSecretEnvironmentVars:
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: eks-creds
+      secretKey: AWS_ACCESS_KEY_ID
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: eks-creds
+      secretKey: AWS_SECRET_ACCESS_KEY
+    - envName: VAULT_AWSKMS_SEAL_KEY_ID
+      secretName: eks-creds
+      secretKey: VAULT_AWSKMS_SEAL_KEY_ID
+  standalone:
+    enabled: false
+  ha:
+    enabled: true
+    replicas: 1
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+        seal "awskms" {
+          region     = "ap-northeast-1"
+          endpoint = "https://kms.ap-northeast-1.amazonaws.com"
+        }
+        storage "raft" {
+          path = "/vault/data"
+        }
+ui:
+  enabled: true
+  serviceType: "LoadBalancer"
+  serviceNodePort: null
+  externalPort: 8200

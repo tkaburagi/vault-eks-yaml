@@ -1,0 +1,67 @@
+global:
+  enabled: true
+  tlsDisable: false
+server:
+  extraSecretEnvironmentVars:
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: eks-creds
+      secretKey: AWS_ACCESS_KEY_ID
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: eks-creds
+      secretKey: AWS_SECRET_ACCESS_KEY
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/tls-ca/ca.crt
+  extraVolumes:
+    - type: secret
+      name: tls-server
+    - type: secret
+      name: tls-ca
+    - type: secret
+      name: kms-creds
+  ha:
+    enabled: true
+    replicas: 1
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+        seal "awskms" {
+          region     = "ap-northeast-1"
+          endpoint = "https://kms.ap-northeast-1.amazonaws.com"
+        }
+        storage "raft" {
+          path = "/vault/data"
+        }
+        retry_join {
+          leader_api_addr = "https://vault-0.vault-internal:8200"
+          leader_ca_cert_file = "/vault/userconfig/tls-ca/ca.crt"
+          leader_client_cert_file = "/vault/userconfig/tls-server/server.crt"
+          leader_client_key_file = "/vault/userconfig/tls-server/server.key"
+        }
+        retry_join {
+          leader_api_addr = "https://vault-1.vault-internal:8200"
+          leader_ca_cert_file = "/vault/userconfig/tls-ca/ca.crt"
+          leader_client_cert_file = "/vault/userconfig/tls-server/server.crt"
+          leader_client_key_file = "/vault/userconfig/tls-server/server.key"
+        }
+        retry_join {
+          leader_api_addr = "https://vault-2.vault-internal:8200"
+          leader_ca_cert_file = "/vault/userconfig/tls-ca/ca.crt"
+          leader_client_cert_file = "/vault/userconfig/tls-server/server.crt"
+          leader_client_key_file = "/vault/userconfig/tls-server/server.key"
+        }
+  image:
+    repository: "hashicorp/vault-enterprise"
+    tag: "1.9.0_ent"
+  enterpriseLicense:
+    secretName: vault-ent-license
+ui:
+  enabled: true
+  serviceType: "NodePort"
+  serviceNodePort: null
+  externalPort: 8200
