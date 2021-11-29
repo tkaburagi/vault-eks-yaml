@@ -1,0 +1,6 @@
+*.csr
+csr.*
+*.crt
+*.key
+*.ca
+.idea

@@ -1,0 +1,70 @@
+# Retry Join, TLS なし
+global:
+  enabled: true
+  tlsDisable: false
+server:
+  log_level: "debug"
+  image:
+    repository: "hashicorp/vault-enterprise"
+    tag: "1.9.0_ent"
+  enterpriseLicense:
+    secretName: vault-ent-license
+  ingress:
+    enabled: true
+  extraSecretEnvironmentVars:
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: eks-creds
+      secretKey: AWS_ACCESS_KEY_ID
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: eks-creds
+      secretKey: AWS_SECRET_ACCESS_KEY
+    - envName: VAULT_AWSKMS_SEAL_KEY_ID
+      secretName: eks-creds
+      secretKey: VAULT_AWSKMS_SEAL_KEY_ID
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
+  extraVolumes:
+    - type: secret
+      name: vault-server-tls
+  standalone:
+    enabled: false
+  ha:
+    enabled: true
+    replicas: 2
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        listener "tcp" {
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+          tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
+        }
+        seal "awskms" {
+          region     = "ap-northeast-1"
+          endpoint = "https://kms.ap-northeast-1.amazonaws.com"
+        }
+        storage "raft" {
+          path = "/vault/data"
+          retry_join {
+            leader_api_addr = "https://vault-0.default.svc.cluster.local:8200"
+            leader_ca_cert_file = "/vault/userconfig/vault-server-tls/vault.ca"
+            leader_client_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+            leader_client_key_file = "/vault/userconfig/vault-server-tls/vault.key"
+          }
+          retry_join {
+            leader_api_addr = "https://vault-1.default.svc.cluster.local:8200"
+            leader_ca_cert_file = "/vault/userconfig/vault-server-tls/vault.ca"
+            leader_client_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+            leader_client_key_file = "/vault/userconfig/vault-server-tls/vault.key"
+           }
+        }
+        api_addr = "https://[::]:8200"
+        cluster_addr = "https://[::]:8201"
+
+ui:
+  enabled: true
+  serviceType: "NodePort"
+  serviceNodePort: null
+  externalPort: 8200

@@ -1,4 +1,4 @@
-# Retry Joinなし
+# Retry Join, TLS なし
 global:
   enabled: true
   tlsDisable: true
@@ -25,7 +25,7 @@ server:
     enabled: false
   ha:
     enabled: true
-    replicas: 1
+    replicas: 2
     raft:
       enabled: true
       setNodeId: true
@@ -41,9 +41,15 @@ server:
         }
         storage "raft" {
           path = "/vault/data"
+          retry_join {
+            leader_api_addr = "http://vault-0.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-1.vault-internal:8200"
+           }
         }
 ui:
   enabled: true
-  serviceType: "LoadBalancer"
+  serviceType: "NodePort"
   serviceNodePort: null
   externalPort: 8200
