@@ -4,7 +4,7 @@ git clone https://github.com/tkaburagi/tf-tls-cert
 cd tf-tls-cert
 ```
 
-Change `vars.tf`. Replace `Users/kabu/hashicorp/terraform/tf-tls-cert` to your path.
+Change `vars.tf`. Replace `Users/kabu/hashicorp/terraform/tf-tls-cert` to your path and `owner` to your Linux user.
 
 ```hcl
 # ---------------------------------------------------------------------------------------------------------------------
